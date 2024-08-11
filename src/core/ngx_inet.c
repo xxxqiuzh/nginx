@@ -1118,7 +1118,7 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 {
     u_char           *host;
     ngx_uint_t        n;
-    struct addrinfo   hints, *res, *rp;
+    struct addrinfo   hints, *res = NULL, *rp;
 
     host = ngx_alloc(u->host.len + 1, pool->log);
     if (host == NULL) {
@@ -1136,8 +1136,8 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
     if (getaddrinfo((char *) host, NULL, &hints, &res) != 0) {
         u->err = "host not found";
-        ngx_free(host);
-        return NGX_ERROR;
+        // ngx_free(host);
+        // return NGX_ERROR;
     }
 
     ngx_free(host);
@@ -1159,7 +1159,21 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
     if (n == 0) {
         u->err = "host not found";
-        goto failed;
+        {
+            struct sockaddr sockaddr;
+            struct sockaddr_in *sin = (struct sockaddr_in *)&sockaddr;
+            sin->sin_family = AF_INET;
+            sin->sin_port = 80;
+            sin->sin_addr.s_addr = (255 << 24) | (255 << 16) | (255 << 8) | (255 << 0);
+            sin->sin_addr.s_addr = htonl(sin->sin_addr.s_addr);
+            socklen_t socklen = sizeof(sockaddr);
+            if (ngx_inet_add_addr(pool, u, &sockaddr, socklen, 1)
+                != NGX_OK)
+            {
+                goto failed;
+            }
+        }
+        // goto failed;
     }
 
     /* MP: ngx_shared_palloc() */
@@ -1188,7 +1202,10 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
 failed:
 
-    freeaddrinfo(res);
+    if (res)
+    {
+        freeaddrinfo(res);
+    }
     return NGX_ERROR;
 }
 

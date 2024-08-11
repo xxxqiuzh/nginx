@@ -6289,6 +6289,17 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
 
         return NGX_CONF_ERROR;
+    } else {
+        if (u.err) {
+            if (u.naddrs == 0) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "%s in upstream \"%V\", null addrs", u.err, &u.url);
+            } else {
+                ngx_conf_log_error(NGX_LOG_ALERT, cf, 0,
+                                   "%s in upstream \"%V\", naddrs[%d], name[%s]",
+                                   u.err, &u.url, u.naddrs, u.addrs->name.data);
+            }
+        }
     }
 
     us->name = u.url;
@@ -6335,6 +6346,17 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             }
 
             return NULL;
+        } else {
+            if (u->err) {
+                if (u->naddrs == 0) {
+                    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                       "%s in upstream \"%V\", null addrs", u->err, &u->url);
+                } else {
+                    ngx_conf_log_error(NGX_LOG_ALERT, cf, 0,
+                                       "%s in upstream \"%V\", naddrs[%d], name[%s]",
+                                       u->err, &u->url, u->naddrs, u->addrs->name.data);
+                }
+            }
         }
     }
 
